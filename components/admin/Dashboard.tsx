@@ -4,7 +4,7 @@ import { Post } from '../../types';
 import { FileText, Eye, User, MoreVertical, Layers } from '../ui/Icons';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-export const Dashboard: React.FC = () => {
+export const Dashboard = () => {
   const [stats, setStats] = useState({ posts: 0, pages: 0, views: 1240, users: 3 });
   const [recentPosts, setRecentPosts] = useState<Post[]>([]);
   const [data, setData] = useState<any[]>([]);

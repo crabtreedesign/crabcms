@@ -1,19 +1,70 @@
-
-import React, { useState, useEffect, Suspense, Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, Navigate, useParams } from 'react-router-dom';
 import { db } from './services/storage';
 import { Post, ThemeConfig, SiteSettings } from './types';
-import { CrabLogo, LayoutDashboard, FileText, Settings, Palette, LogOut, Plus, Search, Trash2, Edit3, ExternalLink, Layers, Home, User as UserIcon } from './components/ui/Icons';
+import { CrabLogo, LayoutDashboard, FileText, Settings, Palette, LogOut, Plus, Search, Trash2, Edit3, ExternalLink, Layers, Home, User as UserIcon, Download, ArrowLeft, Github } from './components/ui/Icons';
 import { PostEditor } from './components/admin/PostEditor';
 import { Dashboard } from './components/admin/Dashboard';
 import { ThemeEditor } from './components/admin/ThemeEditor';
 import ReactMarkdown from 'react-markdown';
 
+/* --- Error Boundary --- */
+interface ErrorBoundaryProps {
+  children?: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+    public state: ErrorBoundaryState = { hasError: false, error: null };
+
+    static getDerivedStateFromError(error: any): ErrorBoundaryState {
+        const err = error instanceof Error ? error : new Error(String(error));
+        return { hasError: true, error: err };
+    }
+    
+    componentDidCatch(error: any, errorInfo: any) {
+        console.error("Uncaught error:", error, errorInfo);
+    }
+    
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white p-4">
+                    <div className="max-w-md w-full bg-slate-800 p-6 rounded-lg border border-slate-700">
+                        <h1 className="text-xl font-bold text-red-500 mb-2">Something went wrong</h1>
+                        <p className="text-slate-300 mb-4">The application crashed. Please try reloading.</p>
+                        <pre className="bg-black/30 p-4 rounded text-xs font-mono overflow-auto mb-4 text-slate-400 max-h-40">
+                            {this.state.error?.message}
+                        </pre>
+                        <button onClick={() => window.location.reload()} className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded transition w-full">
+                            Reload Application
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+/* --- Scroll To Top --- */
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
+
 /* --- Authentication Mock --- */
 const AuthContext = React.createContext<{ isAuthenticated: boolean; login: () => void; logout: () => void } | null>(null);
 
-const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem('crab_auth') === 'true');
+const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('crab_auth') === 'true');
   
   const login = () => {
     localStorage.setItem('crab_auth', 'true');
@@ -33,13 +84,13 @@ const useAuth = () => {
   return context;
 };
 
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const PrivateRoute = ({ children }: { children?: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 };
 
 /* --- Public Components --- */
-const PublicLayout: React.FC<{ theme: ThemeConfig; children: React.ReactNode }> = ({ theme, children }) => {
+const PublicLayout = ({ theme, children }: { theme: ThemeConfig; children?: React.ReactNode }) => {
   return (
     <div className="min-h-screen flex flex-col font-sans selection:bg-brand-500/30 selection:text-white" style={{ backgroundColor: 'var(--cms-bg)', color: 'var(--cms-text)' }}>
       <header className="fixed top-0 w-full z-50 transition-all duration-300 backdrop-blur-md bg-opacity-70 border-b border-white/5 bg-[#020617]/70 supports-[backdrop-filter]:bg-[#020617]/50">
@@ -50,12 +101,12 @@ const PublicLayout: React.FC<{ theme: ThemeConfig; children: React.ReactNode }> 
              </div>
             <span className="font-bold text-xl tracking-tight" style={{ fontFamily: 'var(--cms-font-heading)' }}>Crab CMS</span>
           </Link>
-          <nav className="flex gap-8 text-sm font-medium items-center">
-            <Link to="/" className="relative text-white/70 hover:text-white transition-colors duration-200">Home</Link>
+          <nav className="flex gap-4 md:gap-8 text-sm font-medium items-center">
+            <Link to="/" className="relative text-white/70 hover:text-white transition-colors duration-200 hidden md:block">Home</Link>
             <Link to="/blog" className="relative text-white/70 hover:text-white transition-colors duration-200">Blog</Link>
             <Link to="/about" className="relative text-white/70 hover:text-white transition-colors duration-200">About</Link>
-            <div className="w-px h-4 bg-white/10 mx-2"></div>
-            <Link to="/admin" className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-all shadow-lg shadow-brand-900/20 text-xs font-bold uppercase tracking-wider hover:translate-y-[-1px]">Admin</Link>
+            <div className="w-px h-4 bg-white/10 mx-2 hidden md:block"></div>
+            <Link to="/admin" className="px-4 py-2 md:px-5 md:py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-all shadow-lg shadow-brand-900/20 text-xs font-bold uppercase tracking-wider hover:translate-y-[-1px]">Admin</Link>
           </nav>
         </div>
       </header>
@@ -68,12 +119,31 @@ const PublicLayout: React.FC<{ theme: ThemeConfig; children: React.ReactNode }> 
       </main>
       
       <footer className="border-t border-white/5 bg-black/20 py-16 mt-20">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <div className="flex justify-center mb-8 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col items-center">
+          <div className="flex justify-center mb-6 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
              <CrabLogo className="w-12 h-12 text-brand-500" />
           </div>
-          <p className="text-white/40 text-sm font-medium mb-2">© {new Date().getFullYear()} Crab CMS. Built for the modern web.</p>
-          <p className="text-white/20 text-xs">Designed with React 19 & Vite.</p>
+          
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 mb-8 text-sm text-white/40 font-medium">
+            <p>© {new Date().getFullYear()} Crab CMS</p>
+            <span className="hidden md:block w-1 h-1 rounded-full bg-white/20"></span>
+            <a href="https://github.com/crabtreedesign/crabcms" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center gap-2">
+                <Github size={16} /> GitHub
+            </a>
+            <span className="hidden md:block w-1 h-1 rounded-full bg-white/20"></span>
+            <a href="https://briancrabtree.me" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                Designed by BrianCrabtree.me
+            </a>
+          </div>
+
+          <a 
+            href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=briancrabtree420@gmail.com&item_name=Crab+CMS+Support&currency_code=USD" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0070BA] hover:bg-[#003087] text-white font-bold rounded-full text-sm transition-all hover:scale-105 shadow-lg shadow-blue-900/20"
+          >
+            <span>♥</span> Donate via PayPal
+          </a>
         </div>
       </footer>
     </div>
@@ -88,13 +158,24 @@ const AboutPage = () => {
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-xs font-mono text-brand-500 mb-4">
           v1.0.0-beta.1 Release
         </div>
-        <h1 className="text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.1]" style={{ fontFamily: 'var(--cms-font-heading)' }}>
+        <h1 className="text-4xl md:text-7xl font-extrabold tracking-tight leading-[1.1]" style={{ fontFamily: 'var(--cms-font-heading)' }}>
           The CMS that <br/>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-600">feels like magic.</span>
         </h1>
-        <p className="text-xl md:text-2xl opacity-60 max-w-2xl mx-auto leading-relaxed font-light">
+        <p className="text-lg md:text-2xl opacity-60 max-w-2xl mx-auto leading-relaxed font-light">
           No database hell. No server costs. Just pure, unadulterated performance.
         </p>
+
+        <div className="flex justify-center pt-4">
+          <a 
+            href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=briancrabtree420@gmail.com&item_name=Crab+CMS+Support&currency_code=USD" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#0070BA] hover:bg-[#003087] text-white font-bold rounded-full text-base transition-all hover:scale-105 shadow-lg shadow-blue-900/20"
+          >
+            <span>♥</span> Donate via PayPal
+          </a>
+        </div>
       </div>
 
       {/* Features Grid */}
@@ -119,34 +200,57 @@ const AboutPage = () => {
       <section className="space-y-12 border-t border-white/10 pt-20">
         <div className="text-center max-w-2xl mx-auto">
             <h2 className="text-3xl font-bold mb-4" style={{ fontFamily: 'var(--cms-font-heading)' }}>Ready to Build?</h2>
-            <p className="opacity-60">Follow our quickstart guide to get up and running in seconds.</p>
+            <p className="opacity-60">Install manually via GitHub or download the production ready bundle.</p>
         </div>
 
-        <div className="bg-[#0f172a] border border-white/10 p-8 rounded-2xl font-mono text-sm shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-100 transition-opacity">
-                <div className="flex gap-2">
-                     <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                     <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                     <div className="w-3 h-3 rounded-full bg-green-500"></div>
+        <div className="grid md:grid-cols-2 gap-8">
+            {/* GitHub Card */}
+            <div className="bg-[#0f172a] border border-white/10 p-8 rounded-2xl font-mono text-xs md:text-sm shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    </div>
+                </div>
+                <div className="space-y-6 text-gray-300">
+                    <div className="flex flex-col gap-1">
+                        <p className="text-xs text-gray-500 mb-1"># Clone repository</p>
+                        <p className="break-all"><span className="text-purple-400">git</span> clone https://github.com/crabtreedesign/crabcms.git</p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <p className="text-xs text-gray-500 mb-1"># Install dependencies</p>
+                        <p><span className="text-purple-400">cd</span> crabcms && <span className="text-purple-400">npm</span> install</p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <p className="text-xs text-gray-500 mb-1"># Start development server</p>
+                        <p><span className="text-purple-400">npm</span> run dev</p>
+                    </div>
+                    <div className="flex gap-2 text-green-400 pt-2">
+                        <span className="text-gray-500 select-none">➜</span>
+                        <p>Ready on http://localhost:5173</p>
+                    </div>
                 </div>
             </div>
-            <div className="space-y-6 text-gray-300">
-                <div className="flex gap-4">
-                    <span className="text-gray-500 select-none">1</span>
-                    <p><span className="text-purple-400">git</span> clone https://github.com/crab-cms/crab-cms.git</p>
+
+            {/* Download Card */}
+            <div className="bg-white/[0.03] border border-white/10 p-8 rounded-2xl flex flex-col justify-between hover:bg-white/[0.05] transition-colors">
+                <div>
+                    <div className="w-12 h-12 bg-brand-500/20 text-brand-500 rounded-xl flex items-center justify-center mb-6">
+                        <Download size={24} />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Direct Download</h3>
+                    <p className="text-gray-400 text-sm leading-relaxed mb-8">
+                        Get the full source code as a ZIP archive. Perfect for offline development or manual server deployment.
+                    </p>
                 </div>
-                <div className="flex gap-4">
-                    <span className="text-gray-500 select-none">2</span>
-                    <p><span className="text-purple-400">cd</span> crab-cms && <span className="text-purple-400">npm</span> install</p>
-                </div>
-                <div className="flex gap-4">
-                    <span className="text-gray-500 select-none">3</span>
-                    <p><span className="text-purple-400">npm</span> run dev</p>
-                </div>
-                <div className="flex gap-4 text-green-400 mt-4">
-                    <span className="text-gray-500 select-none">➜</span>
-                    <p>Ready on http://localhost:5173 🚀</p>
-                </div>
+                <a 
+                    href="http://briancrabtree.me/downloads/crabcms.zip" 
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                    <Download size={18} />
+                    Download .ZIP
+                </a>
             </div>
         </div>
       </section>
@@ -158,39 +262,57 @@ const AboutPage = () => {
 const HomeRoute = () => {
   const [data, setData] = useState<{ homepage: Post | null, recentPosts: Post[] }>({ homepage: null, recentPosts: [] });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      const settings = await db.getSettings();
-      let homepage = null;
-      if (settings.homepageId) {
-        homepage = await db.getPost(settings.homepageId);
-      }
-      
-      const allPosts = await db.getPosts();
-      const recentPosts = allPosts
-        .filter(p => p.type === 'post' && p.status === 'published')
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 3);
+      try {
+        const settings = await db.getSettings();
+        let homepage = null;
+        if (settings.homepageId) {
+          homepage = await db.getPost(settings.homepageId);
+        }
+        
+        const allPosts = await db.getPosts();
+        const recentPosts = allPosts
+          .filter(p => p.type === 'post' && p.status === 'published')
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 3);
 
-      setData({ homepage: homepage || null, recentPosts });
-      setLoading(false);
+        setData({ homepage: homepage || null, recentPosts });
+      } catch (err) {
+        console.error("Failed to load home page content", err);
+        setError("Failed to load content. Please check your connection or database adapter.");
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
 
   if (loading) return <div className="min-h-[50vh] flex items-center justify-center"><div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div></div>;
+  
+  if (error) return <div className="min-h-[50vh] flex flex-col items-center justify-center text-center p-4"><p className="text-red-400 mb-4">{error}</p><button onClick={() => window.location.reload()} className="underline text-sm opacity-60 hover:opacity-100">Try Again</button></div>;
 
   // Custom Animated Markdown Components
   const animatedComponents = {
-    h1: ({node, ...props}: any) => (
+    h1: ({node, children, ...props}: any) => {
+      const textContent = Array.isArray(children) ? children.join('') : String(children || '');
+      const words = textContent.split(' ');
+      const firstWord = words[0] || '';
+      const restText = words.slice(1).join(' ');
+
+      return (
       <div className="relative">
-        <div className="absolute -top-10 -right-4 md:-right-10 z-0 opacity-40 animate-spin pointer-events-none" style={{ animationDuration: '20s' }}>
-            <CrabLogo className="w-40 h-40 md:w-64 md:h-64 text-brand-500" />
+        <div className="absolute -top-10 -right-4 md:-right-20 z-0 opacity-100 animate-spin pointer-events-none" style={{ animationDuration: '20s' }}>
+            <CrabLogo className="w-48 h-48 md:w-80 md:h-80 text-brand-500/20" />
         </div>
-        <h1 className="relative z-10 text-6xl md:text-8xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-white via-brand-200 to-brand-500 mb-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 tracking-tight leading-[1.1]" {...props} />
+        <h1 className="relative z-10 text-4xl md:text-6xl lg:text-8xl font-extrabold mb-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 tracking-tight leading-[1.1]" {...props}>
+            <span className="text-white">{firstWord} </span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-600">{restText}</span>
+        </h1>
       </div>
-    ),
+    )},
     h2: ({node, ...props}: any) => (
       <h2 className="text-3xl md:text-5xl font-bold mt-24 mb-8 text-white animate-in fade-in slide-in-from-left-8 duration-1000 delay-200 tracking-tight" {...props} />
     ),
@@ -198,7 +320,7 @@ const HomeRoute = () => {
       <h3 className="text-2xl font-semibold text-brand-400 mt-12 mb-4 animate-in fade-in zoom-in duration-1000 delay-300" {...props} />
     ),
     p: ({node, ...props}: any) => (
-      <p className="text-xl md:text-2xl opacity-70 leading-relaxed mb-8 font-light animate-in fade-in duration-1000 delay-500 max-w-3xl" {...props} />
+      <p className="text-lg md:text-2xl opacity-70 leading-relaxed mb-8 font-light animate-in fade-in duration-1000 delay-500 max-w-3xl" {...props} />
     ),
     ul: ({node, ...props}: any) => (
       <ul className="grid grid-cols-1 md:grid-cols-3 gap-6 my-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-700" {...props} />
@@ -235,7 +357,7 @@ const HomeRoute = () => {
          <section className="border-t border-white/10 pt-24">
             <div className="flex items-end justify-between mb-12">
                 <div>
-                    <h2 className="text-4xl font-bold mb-2" style={{ fontFamily: 'var(--cms-font-heading)' }}>Latest Stories</h2>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-2" style={{ fontFamily: 'var(--cms-font-heading)' }}>Latest Stories</h2>
                     <p className="opacity-60 text-lg">Fresh thinking from the team.</p>
                 </div>
                 <Link to="/blog" className="hidden md:flex text-brand-500 hover:text-brand-400 font-medium items-center gap-2 px-4 py-2 rounded-full hover:bg-brand-500/10 transition-colors">View All <ExternalLink size={16}/></Link>
@@ -276,31 +398,58 @@ const HomeRoute = () => {
 const PageRoute = () => {
   const { slug } = useParams();
   const [page, setPage] = useState<Post | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    if (slug) db.getPostBySlug(slug).then(p => {
-       if (p?.type === 'page') setPage(p);
-    });
+    if (slug) {
+        db.getPostBySlug(slug).then(p => {
+            if (p?.type === 'page') setPage(p);
+            setLoading(false);
+        }).catch(err => {
+            console.error("Failed to load page", err);
+            setError("Failed to load page.");
+            setLoading(false);
+        });
+    }
   }, [slug]);
 
+  if (loading) return <div className="min-h-[50vh] flex items-center justify-center"><div className="animate-pulse text-xl opacity-50">Loading page...</div></div>;
+  if (error) return <div className="text-center py-20 text-red-400">{error}</div>;
   if (!page) return <div className="text-center py-20 opacity-50">Page not found.</div>;
 
   return (
     <article className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h1 className="text-5xl md:text-6xl font-bold mb-12 tracking-tight" style={{ fontFamily: 'var(--cms-font-heading)' }}>{page.title}</h1>
-        <ReactMarkdown className="prose prose-invert prose-lg max-w-none">
-          {page.content}
-        </ReactMarkdown>
+        <h1 className="text-4xl md:text-6xl font-bold mb-12 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-600" style={{ fontFamily: 'var(--cms-font-heading)' }}>{page.title}</h1>
+        <div className="prose prose-invert prose-lg max-w-none">
+            <ReactMarkdown>
+                {page.content}
+            </ReactMarkdown>
+        </div>
       </article>
   );
 };
 
 const BlogIndex = () => {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    db.getPosts().then(p => setPosts(p.filter(x => x.status === 'published' && x.type === 'post')));
+    db.getPosts()
+      .then(p => {
+          setPosts(p.filter(x => x.status === 'published' && x.type === 'post'));
+          setLoading(false);
+      })
+      .catch(err => {
+          console.error("Failed to load blog posts", err);
+          setError("Failed to load blog posts.");
+          setLoading(false);
+      });
   }, []);
+
+  if (loading) return <div className="min-h-[50vh] flex items-center justify-center"><div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div></div>;
+  if (error) return <div className="text-center py-20 text-red-400">{error}</div>;
 
   const featuredPost = posts[0];
   const remainingPosts = posts.slice(1);
@@ -308,8 +457,8 @@ const BlogIndex = () => {
   return (
     <div className="space-y-20 animate-in fade-in duration-700">
       <div className="text-center space-y-6 max-w-3xl mx-auto py-12">
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--cms-font-heading)' }}>
-          The <span className="text-brand-500">Crab</span> Blog
+        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white" style={{ fontFamily: 'var(--cms-font-heading)' }}>
+          The <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-600">Crab Blog</span>
         </h1>
         <p className="text-xl opacity-60 font-light" style={{ fontFamily: 'var(--cms-font-body)' }}>
           Engineering, design, and stories from the future of web development.
@@ -352,7 +501,7 @@ const BlogIndex = () => {
                  <span>{new Date(post.createdAt).toLocaleDateString()}</span>
               </div>
               <Link to={`/post/${post.slug}`} className="block">
-                <h2 className="text-3xl font-bold group-hover:text-brand-400 transition-colors leading-tight" style={{ fontFamily: 'var(--cms-font-heading)' }}>{post.title}</h2>
+                <h2 className="text-2xl md:text-3xl font-bold group-hover:text-brand-400 transition-colors leading-tight" style={{ fontFamily: 'var(--cms-font-heading)' }}>{post.title}</h2>
               </Link>
               <p className="opacity-70 line-clamp-3 leading-relaxed text-base">{post.excerpt}</p>
             </div>
@@ -366,12 +515,27 @@ const BlogIndex = () => {
 const BlogPost = () => {
   const { slug } = useParams();
   const [post, setPost] = useState<Post | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (slug) db.getPostBySlug(slug).then(setPost);
+    if (slug) {
+        db.getPostBySlug(slug)
+          .then((p) => {
+              setPost(p || null);
+              setLoading(false);
+          })
+          .catch(err => {
+              console.error("Failed to load blog post", err);
+              setError("Failed to load article.");
+              setLoading(false);
+          });
+    }
   }, [slug]);
 
-  if (!post) return <div className="min-h-[60vh] flex items-center justify-center"><div className="animate-pulse text-xl opacity-50">Loading article...</div></div>;
+  if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="animate-pulse text-xl opacity-50">Loading article...</div></div>;
+  if (error) return <div className="text-center py-20 text-red-400">{error}</div>;
+  if (!post) return <div className="text-center py-20 opacity-50">Article not found.</div>;
 
   // Calculate read time
   const words = post.content.split(' ').length;
@@ -393,7 +557,7 @@ const BlogPost = () => {
            )}
         </div>
         
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight" style={{ fontFamily: 'var(--cms-font-heading)' }}>
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-600" style={{ fontFamily: 'var(--cms-font-heading)' }}>
             {post.title}
         </h1>
         
@@ -441,329 +605,236 @@ const BlogPost = () => {
   );
 };
 
-const Login = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
+/* --- Admin Components --- */
 
+const Login = () => {
+  const { login, isAuthenticated } = useAuth();
+  const [pass, setPass] = useState('');
+  const navigate = useNavigate();
+  
   const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    login();
-    navigate('/admin');
+      e.preventDefault();
+      login();
+      navigate('/admin');
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#020617] px-4 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-brand-900/10 blur-[100px]"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-900/10 blur-[100px]"></div>
-      </div>
+  if (isAuthenticated) return <Navigate to="/admin" />;
 
-      <div className="w-full max-w-md bg-white/[0.02] backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/10 text-center relative z-10">
-        <div className="flex justify-center mb-8">
-          <div className="p-4 bg-white/5 rounded-2xl ring-1 ring-white/10 shadow-lg">
-            <CrabLogo className="w-10 h-10 text-brand-500" />
-          </div>
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-xl relative">
+        <div className="absolute top-6 left-6">
+            <Link to="/" className="text-gray-400 hover:text-gray-600 flex items-center gap-2 text-sm transition-colors">
+                <ArrowLeft size={16} /> Back to Home
+            </Link>
         </div>
-        <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Welcome Back</h2>
-        <p className="text-slate-400 mb-8 font-light">Enter your credentials to access the workspace.</p>
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div className="space-y-1 text-left">
-              <label className="text-xs font-bold uppercase text-slate-500 ml-1">Email</label>
-              <input type="email" placeholder="admin@crabcms.com" className="w-full p-4 bg-black/20 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-brand-500 focus:border-transparent focus:outline-none transition" required />
-          </div>
-          <div className="space-y-1 text-left">
-              <label className="text-xs font-bold uppercase text-slate-500 ml-1">Password</label>
-              <input type="password" placeholder="••••••••" className="w-full p-4 bg-black/20 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-brand-500 focus:border-transparent focus:outline-none transition" required />
-          </div>
-          <button type="submit" className="w-full bg-brand-600 text-white p-4 rounded-xl font-bold hover:bg-brand-500 transition shadow-lg shadow-brand-900/20 mt-2">Sign In</button>
+        <h1 className="text-2xl font-bold mb-6 text-center text-gray-900 mt-8">Crab CMS Login</h1>
+        <form onSubmit={handleLogin}>
+            <input 
+            type="password" 
+            placeholder="Enter password (demo)" 
+            className="w-full p-3 border rounded mb-4"
+            value={pass}
+            onChange={e => setPass(e.target.value)}
+            />
+            <button type="submit" className="w-full bg-brand-600 text-white p-3 rounded font-bold hover:bg-brand-500">
+            Sign In
+            </button>
         </form>
-        <p className="mt-8 text-xs text-slate-600">
-          <span className="opacity-50">Demo Access:</span> <span className="text-slate-400">Any credentials work</span>
-        </p>
+        <p className="text-xs text-gray-400 mt-4 text-center">For demo, just click Sign In.</p>
       </div>
     </div>
   );
 };
 
-/* --- Admin Components --- */
-const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { logout } = useAuth();
-  const location = useLocation();
+const ThemeRoute = () => {
+    const [theme, setTheme] = useState<ThemeConfig | null>(null);
+    useEffect(() => { db.getTheme().then(setTheme) }, []);
+    if (!theme) return <div>Loading theme...</div>;
+    return <ThemeEditor currentTheme={theme} onUpdate={(t) => {
+        db.saveTheme(t);
+        // Update live vars
+        const root = document.documentElement;
+        root.style.setProperty('--cms-bg', t.colors.background);
+        root.style.setProperty('--cms-text', t.colors.text);
+        root.style.setProperty('--cms-primary', t.colors.primary);
+        root.style.setProperty('--cms-secondary', t.colors.secondary);
+        root.style.setProperty('--cms-font-heading', t.fonts.heading);
+        root.style.setProperty('--cms-font-body', t.fonts.body);
+    }} />;
+};
 
-  const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-    { icon: FileText, label: 'Posts', path: '/admin/posts' },
-    { icon: Layers, label: 'Pages', path: '/admin/pages' },
-    { icon: Palette, label: 'Appearance', path: '/admin/appearance' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' },
-  ];
+const EditorRoute = ({ type }: { type?: 'post' | 'page' }) => {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    return <PostEditor postId={id} defaultType={type || 'post'} onClose={() => navigate(-1)} onSave={() => navigate(-1)} />;
+};
+
+const PostsList = ({ type }: { type: 'post' | 'page' }) => {
+    const [posts, setPosts] = useState<Post[]>([]);
+    
+    const load = () => db.getPosts().then(p => setPosts(p.filter(x => x.type === type)));
+    useEffect(() => { load() }, [type]);
+
+    const handleDelete = async (id: string) => {
+        if(confirm('Delete this item?')) {
+            await db.deletePost(id);
+            load();
+        }
+    };
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h2 className="text-xl font-bold capitalize text-gray-900">{type}s</h2>
+                <Link to={`/admin/${type === 'post' ? 'posts' : 'pages'}/new`} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition">
+                    <Plus size={18} /> New {type}
+                </Link>
+            </div>
+            <table className="w-full text-left">
+                <thead>
+                    <tr className="bg-gray-50 text-gray-500 text-sm">
+                        <th className="px-6 py-3 font-medium">Title</th>
+                        <th className="px-6 py-3 font-medium">Status</th>
+                        <th className="px-6 py-3 font-medium">Date</th>
+                        <th className="px-6 py-3 font-medium text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                    {posts.map(post => (
+                        <tr key={post.id} className="hover:bg-gray-50 group">
+                            <td className="px-6 py-4">
+                                <Link to={`/admin/edit/${post.id}`} className="font-medium text-gray-900 hover:text-brand-600">
+                                    {post.title || '(Untitled)'}
+                                </Link>
+                                <div className="text-xs text-gray-400 mt-1">{post.slug}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                                <span className={`inline-flex px-2 py-1 text-xs font-bold rounded-full ${post.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                    {post.status}
+                                </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                                {new Date(post.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Link to={`/admin/edit/${post.id}`} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                                        <Edit3 size={16} />
+                                    </Link>
+                                    <button onClick={() => handleDelete(post.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                    {posts.length === 0 && (
+                        <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">No {type}s found.</td></tr>
+                    )}
+                </tbody>
+            </table>
+        </div>
+    );
+};
+
+const AdminLayout = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+      logout();
+      navigate('/');
+  };
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-gray-900 font-sans">
-      <aside className="w-72 bg-slate-900 text-slate-300 border-r border-slate-800 flex flex-col fixed h-full z-20 shadow-2xl">
-        <div className="h-20 flex items-center px-8 border-b border-slate-800/50">
-           <CrabLogo className="w-8 h-8 text-brand-500 mr-3" />
-           <span className="font-bold text-xl text-white tracking-tight">Crab CMS</span>
+    <div className="flex h-screen bg-gray-50 text-gray-900 font-sans">
+      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col z-20">
+        <div className="h-16 flex items-center px-6 border-b border-gray-100">
+           <CrabLogo className="w-6 h-6 text-red-600 mr-2" />
+           <span className="font-bold text-lg">Crab CMS</span>
         </div>
-        <nav className="flex-1 p-6 space-y-2">
-          <div className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-4 px-2">Menu</div>
-          {navItems.map(item => (
-            <Link 
-              key={item.path} 
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all ${location.pathname === item.path ? 'bg-brand-600 text-white shadow-lg shadow-brand-900/30' : 'hover:bg-slate-800 hover:text-white'}`}
-            >
-              <item.icon size={18} />
-              {item.label}
-            </Link>
-          ))}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+           <Link to="/admin" className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition"><LayoutDashboard size={18}/> Dashboard</Link>
+           <Link to="/admin/posts" className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition"><FileText size={18}/> Posts</Link>
+           <Link to="/admin/pages" className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition"><Layers size={18}/> Pages</Link>
+           <Link to="/admin/theme" className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition"><Palette size={18}/> Theme</Link>
+           <div className="pt-4 mt-4 border-t border-gray-100">
+             <Link to="/" target="_blank" className="flex items-center gap-3 px-3 py-2 text-gray-500 rounded-lg hover:bg-gray-50 transition"><ExternalLink size={18}/> View Site</Link>
+           </div>
         </nav>
-        <div className="p-6 border-t border-slate-800/50 bg-slate-900/50">
-          <button onClick={logout} className="flex items-center gap-3 px-4 py-3 w-full text-left text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition text-sm font-medium">
-            <LogOut size={18} />
-            Sign Out
+        <div className="p-4 border-t border-gray-100">
+          <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2 text-red-600 rounded-lg hover:bg-red-50 transition w-full text-left">
+            <LogOut size={18} /> Sign Out
           </button>
         </div>
       </aside>
-      <main className="flex-1 ml-72 p-10 overflow-y-auto min-h-screen bg-slate-50">
-        <div className="max-w-6xl mx-auto animate-in fade-in duration-300">
-          {children}
+      <main className="flex-1 overflow-auto bg-gray-50 relative">
+        <div className="p-8 max-w-7xl mx-auto">
+           <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/theme" element={<ThemeRoute />} />
+              <Route path="/posts" element={<PostsList type="post" />} />
+              <Route path="/pages" element={<PostsList type="page" />} />
+              <Route path="/posts/new" element={<EditorRoute type="post" />} />
+              <Route path="/pages/new" element={<EditorRoute type="page" />} />
+              <Route path="/edit/:id" element={<EditorRoute />} />
+           </Routes>
         </div>
       </main>
     </div>
   );
 };
 
-// Generic Manager for Posts and Pages
-const ContentManager: React.FC<{ type: 'post' | 'page' }> = ({ type }) => {
-  const [items, setItems] = useState<Post[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
+const App = () => {
+    const [theme, setTheme] = useState<ThemeConfig>({
+        id: 'default',
+        name: 'Default',
+        colors: { background: '#020617', text: '#f1f5f9', primary: '#f43f5e', secondary: '#64748b' },
+        fonts: { heading: 'Inter', body: 'Inter' }
+    });
 
-  const loadItems = async () => {
-    const all = await db.getPosts();
-    setItems(all.filter(p => p.type === type));
-    setSettings(await db.getSettings());
-  };
-  
-  useEffect(() => { loadItems(); }, [type]);
+    useEffect(() => {
+        db.getTheme().then(t => {
+            setTheme(t);
+             const root = document.documentElement;
+            root.style.setProperty('--cms-bg', t.colors.background);
+            root.style.setProperty('--cms-text', t.colors.text);
+            root.style.setProperty('--cms-primary', t.colors.primary);
+            root.style.setProperty('--cms-secondary', t.colors.secondary);
+            root.style.setProperty('--cms-font-heading', t.fonts.heading);
+            root.style.setProperty('--cms-font-body', t.fonts.body);
+        });
+    }, []);
 
-  const handleDelete = async (id: string) => {
-    if (confirm(`Are you sure you want to delete this ${type}?`)) {
-      await db.deletePost(id);
-      loadItems();
-    }
-  };
-
-  const setAsHomepage = async (id: string) => {
-      if(!settings) return;
-      const newSettings = { ...settings, homepageId: id };
-      await db.saveSettings(newSettings);
-      setSettings(newSettings);
-  };
-
-  const unsetHomepage = async () => {
-      if(!settings) return;
-      const newSettings = { ...settings, homepageId: undefined };
-      await db.saveSettings(newSettings);
-      setSettings(newSettings);
-  };
-
-  if (isEditorOpen) {
     return (
-      <div className="fixed inset-0 z-50 bg-white">
-        <PostEditor 
-          postId={editingId} 
-          defaultType={type}
-          onClose={() => { setIsEditorOpen(false); setEditingId(null); }} 
-          onSave={() => { setIsEditorOpen(false); setEditingId(null); loadItems(); }} 
-        />
-      </div>
+        <ErrorBoundary>
+            <AuthProvider>
+                <Router>
+                    <ScrollToTop />
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                         <Route path="/admin/*" element={
+                            <PrivateRoute>
+                                <AdminLayout />
+                            </PrivateRoute>
+                        } />
+                        <Route path="*" element={
+                            <PublicLayout theme={theme}>
+                                <Routes>
+                                    <Route path="/" element={<HomeRoute />} />
+                                    <Route path="/blog" element={<BlogIndex />} />
+                                    <Route path="/post/:slug" element={<BlogPost />} />
+                                    <Route path="/about" element={<AboutPage />} />
+                                    <Route path="/:slug" element={<PageRoute />} />
+                                </Routes>
+                            </PublicLayout>
+                        } />
+                    </Routes>
+                </Router>
+            </AuthProvider>
+        </ErrorBoundary>
     );
-  }
-
-  const isPage = type === 'page';
-
-  return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
-           <h1 className="text-3xl font-bold text-slate-900 capitalize tracking-tight">{type}s</h1>
-           <p className="text-slate-500 mt-1">Manage your {type} content</p>
-        </div>
-        <button 
-          onClick={() => { setEditingId(null); setIsEditorOpen(true); }}
-          className="bg-brand-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-brand-700 transition shadow-lg shadow-brand-200 font-bold text-sm"
-        >
-          <Plus size={18} /> New {type === 'post' ? 'Post' : 'Page'}
-        </button>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex gap-4 bg-slate-50/50">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-3 text-slate-400" size={18} />
-            <input type="text" placeholder={`Search ${type}s...`} className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm bg-white shadow-sm" />
-          </div>
-        </div>
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-bold tracking-wider">
-            <tr>
-              <th className="px-6 py-4">Title</th>
-              <th className="px-6 py-4">Status</th>
-              {isPage && <th className="px-6 py-4">Homepage</th>}
-              <th className="px-6 py-4">Date</th>
-              <th className="px-6 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {items.map(item => {
-                const isHomepage = settings?.homepageId === item.id;
-                return (
-              <tr key={item.id} className="hover:bg-slate-50 transition group">
-                <td className="px-6 py-4">
-                  <div className="font-semibold text-slate-900">{item.title}</div>
-                  <div className="text-xs text-slate-400 font-mono mt-0.5">/{item.slug}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${item.status === 'published' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                    {item.status}
-                  </span>
-                </td>
-                 {isPage && (
-                    <td className="px-6 py-4">
-                        {isHomepage ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                <Home size={12} /> Home
-                            </span>
-                        ) : (
-                            <button onClick={() => setAsHomepage(item.id)} className="text-xs font-medium text-slate-400 hover:text-blue-600 hover:underline">Set as Home</button>
-                        )}
-                         {isHomepage && <button onClick={unsetHomepage} className="ml-2 text-xs font-medium text-red-400 hover:text-red-600 hover:underline">(Unset)</button>}
-                    </td>
-                )}
-                <td className="px-6 py-4 text-sm text-slate-500">{new Date(item.updatedAt).toLocaleDateString()}</td>
-                <td className="px-6 py-4 text-right flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => { setEditingId(item.id); setIsEditorOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
-                    <Edit3 size={18} />
-                  </button>
-                  <button onClick={() => handleDelete(item.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
-                    <Trash2 size={18} />
-                  </button>
-                </td>
-              </tr>
-            )})}
-          </tbody>
-        </table>
-        {items.length === 0 && <div className="p-16 text-center text-slate-400">No {type}s found. Start writing!</div>}
-      </div>
-    </div>
-  );
 };
 
-/* --- Main App Container --- */
-const AppContent = () => {
-  const [theme, setTheme] = useState<ThemeConfig | null>(null);
-
-  useEffect(() => {
-    const init = async () => {
-      await db.connect();
-      const t = await db.getTheme();
-      setTheme(t);
-      updateCSSVariables(t);
-    };
-    init();
-  }, []);
-
-  const updateCSSVariables = (t: ThemeConfig) => {
-    const root = document.documentElement;
-    root.style.setProperty('--cms-bg', t.colors.background);
-    root.style.setProperty('--cms-text', t.colors.text);
-    root.style.setProperty('--cms-primary', t.colors.primary);
-    root.style.setProperty('--cms-secondary', t.colors.secondary);
-    root.style.setProperty('--cms-font-heading', t.fonts.heading);
-    root.style.setProperty('--cms-font-body', t.fonts.body);
-  };
-
-  const handleThemeUpdate = (newTheme: ThemeConfig) => {
-    setTheme(newTheme);
-    updateCSSVariables(newTheme);
-  };
-
-  if (!theme) return null;
-
-  return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        
-        {/* Admin Routes */}
-        <Route path="/admin/*" element={
-          <PrivateRoute>
-            <AdminLayout>
-              <Routes>
-                <Route index element={<Dashboard />} />
-                <Route path="posts" element={<ContentManager type="post" />} />
-                <Route path="pages" element={<ContentManager type="page" />} />
-                <Route path="appearance" element={<ThemeEditor currentTheme={theme} onUpdate={handleThemeUpdate} />} />
-                <Route path="settings" element={<div className="text-gray-500">Global settings placeholder (SEO, Users, etc)</div>} />
-              </Routes>
-            </AdminLayout>
-          </PrivateRoute>
-        } />
-
-        {/* Public Routes */}
-        <Route path="/*" element={
-          <PublicLayout theme={theme}>
-            <Routes>
-              <Route index element={<HomeRoute />} />
-              <Route path="blog" element={<BlogIndex />} />
-              <Route path="post/:slug" element={<BlogPost />} />
-              <Route path="page/:slug" element={<PageRoute />} />
-              <Route path="about" element={<AboutPage />} />
-            </Routes>
-          </PublicLayout>
-        } />
-      </Routes>
-    </Router>
-  );
-};
-
-class ErrorBoundary extends Component<any, { hasError: boolean, error: Error | null }> {
-    constructor(props: any) {
-        super(props);
-        this.state = { hasError: false, error: null };
-    }
-    static getDerivedStateFromError(error: any) {
-        const err = error instanceof Error ? error : new Error(String(error));
-        return { hasError: true, error: err };
-    }
-    componentDidCatch(error: any, errorInfo: any) {
-        console.error("Uncaught error:", error, errorInfo);
-    }
-    render() {
-        if (this.state.hasError) {
-            return (<div className="min-h-screen flex items-center justify-center bg-slate-900 text-white p-4">
- <div className="max-w-md w-full bg-slate-800 p-6 rounded-lg border border-slate-700">
- <h1 className="text-xl font-bold text-red-500 mb-2">Something went wrong</h1>
- <p className="text-slate-300 mb-4">The application crashed. Please try reloading.</p>
- <pre className="bg-black/30 p-4 rounded text-xs font-mono overflow-auto mb-4 text-slate-400">{this.state.error?.message}</pre>
- <button onClick={() => window.location.reload()} className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded transition">Reload Application</button>
- </div>
- </div>);
-        }
-        return this.props.children;
-    }
-}
-
-export default function App() {
-  return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </ErrorBoundary>
-  );
-}
+export default App;

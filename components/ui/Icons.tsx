@@ -18,7 +18,9 @@ import {
   Trash2,
   Edit3,
   Eye,
-  Home
+  Home,
+  Download,
+  Github
 } from 'lucide-react';
 
 export const CrabLogo: React.FC<{ className?: string }> = ({ className = "w-8 h-8" }) => (
@@ -61,5 +63,5 @@ export const Layers: React.FC<{ className?: string; size?: number }> = ({ classN
 export { 
   LayoutDashboard, FileText, Settings, Palette, ImageIcon, LogOut, 
   Plus, Search, Save, ArrowLeft, ExternalLink, Menu, X, User,
-  MoreVertical, Trash2, Edit3, Eye, Home
+  MoreVertical, Trash2, Edit3, Eye, Home, Download, Github
 };
