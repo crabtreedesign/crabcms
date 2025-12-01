@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, type ReactNode } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, Navigate, useParams } from 'react-router-dom';
 import { db } from './services/storage';
 import { Post, ThemeConfig, SiteSettings } from './types';
@@ -10,7 +10,7 @@ import ReactMarkdown from 'react-markdown';
 
 /* --- Error Boundary --- */
 interface ErrorBoundaryProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 interface ErrorBoundaryState {
@@ -18,6 +18,7 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
+// Fixed: Inherit from Component directly to ensure `this.props` is correctly typed
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
     public state: ErrorBoundaryState = { hasError: false, error: null };
 
