@@ -1,0 +1,5 @@
+{
+  "name": "Crab CMS",
+  "description": "A fully featured, frontend-first Content Management System with a modular architecture, theme engine, and local database adapter.",
+  "requestFramePermissions": []
+}

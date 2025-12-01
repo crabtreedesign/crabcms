@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crab CMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              serif: ['Merriweather', 'serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            colors: {
+              brand: {
+                50: '#fff1f2',
+                100: '#ffe4e6',
+                200: '#fecdd3',
+                300: '#fda4af',
+                400: '#fb7185',
+                500: '#f43f5e', // Rose 500
+                600: '#e11d48',
+                700: '#be123c',
+                800: '#9f1239',
+                900: '#881337',
+              },
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+      /* Premium Theme Variables */
+      :root {
+        --cms-bg: #020617;
+        --cms-text: #f1f5f9;
+        --cms-primary: #f43f5e;
+        --cms-secondary: #64748b;
+        --cms-font-heading: 'Inter', sans-serif;
+        --cms-font-body: 'Inter', sans-serif;
+      }
+      body {
+        background-color: var(--cms-bg);
+        color: var(--cms-text);
+        transition: background-color 0.5s ease, color 0.5s ease;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* Typography System */
+      .prose { 
+        color: var(--cms-text); 
+        max-width: 65ch; 
+        font-size: 1.125rem;
+        font-family: var(--cms-font-body);
+      }
+      .prose h1, .prose h2, .prose h3, .prose h4 { 
+        color: inherit; 
+        font-family: var(--cms-font-heading); 
+        letter-spacing: -0.02em;
+      }
+      .prose h1 { 
+        font-size: 2.75em; 
+        font-weight: 800; 
+        margin-top: 0;
+        margin-bottom: 0.8em; 
+        line-height: 1.1; 
+      }
+      .prose h2 { 
+        font-size: 1.85em; 
+        font-weight: 700; 
+        margin-top: 2.5em; 
+        margin-bottom: 0.8em; 
+        line-height: 1.3; 
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 0.3em;
+      }
+      .prose h3 {
+        font-size: 1.5em;
+        font-weight: 600;
+        margin-top: 2em;
+        margin-bottom: 0.6em;
+      }
+      .prose p { 
+        margin-bottom: 1.75em; 
+        line-height: 1.85; 
+        opacity: 0.9; 
+        color: rgba(255,255,255,0.85);
+      }
+      .prose a { 
+        color: var(--cms-primary); 
+        text-decoration: none; 
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.2s;
+      }
+      .prose a:hover {
+        border-bottom-color: var(--cms-primary);
+      }
+      .prose ul, .prose ol { 
+        padding-left: 1.5em; 
+        margin-bottom: 1.75em; 
+        opacity: 0.9; 
+      }
+      .prose li {
+        margin-bottom: 0.5em;
+      }
+      .prose pre { 
+        background: #0f172a; 
+        border: 1px solid rgba(255,255,255,0.1); 
+        color: #e2e8f0; 
+        padding: 1.5em; 
+        border-radius: 0.75em; 
+        overflow-x: auto; 
+        margin: 2.5em 0; 
+        font-size: 0.9em; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+      .prose blockquote { 
+        border-left: 4px solid var(--cms-primary); 
+        padding-left: 1.5em; 
+        font-style: italic; 
+        font-size: 1.25em;
+        color: var(--cms-text); 
+        opacity: 0.8;
+        margin: 2.5em 0; 
+        background: linear-gradient(to right, rgba(255,255,255,0.03), transparent);
+        padding-top: 1em;
+        padding-bottom: 1em;
+        border-radius: 0 0.5em 0.5em 0;
+      }
+      .prose img { 
+        width: 100%; 
+        height: auto; 
+        border-radius: 0.75em; 
+        margin: 2.5em 0; 
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); 
+      }
+      .prose strong { 
+        color: var(--cms-text); 
+        font-weight: 700; 
+      }
+      
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--cms-bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6",
+    "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
+    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
