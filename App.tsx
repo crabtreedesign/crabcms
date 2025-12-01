@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Component, type ReactNode } from 'react';
+import React, { useState, useEffect, type ReactNode } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, Navigate, useParams } from 'react-router-dom';
 import { db } from './services/storage';
 import { Post, ThemeConfig, SiteSettings } from './types';
@@ -18,9 +18,11 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-// Fixed: Inherit from Component directly to ensure `this.props` is correctly typed
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-    public state: ErrorBoundaryState = { hasError: false, error: null };
+    constructor(props: ErrorBoundaryProps) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
 
     static getDerivedStateFromError(error: any): ErrorBoundaryState {
         const err = error instanceof Error ? error : new Error(String(error));
@@ -298,7 +300,33 @@ const HomeRoute = () => {
   // Custom Animated Markdown Components
   const animatedComponents = {
     h1: ({node, children, ...props}: any) => {
-      const textContent = Array.isArray(children) ? children.join('') : String(children || '');
+      // Safely convert children to string if possible, or fallback to standard render
+      let textContent = "";
+      
+      try {
+        if (typeof children === 'string') {
+          textContent = children;
+        } else if (Array.isArray(children)) {
+            // Flatten array of strings/objects to a single string if possible
+            textContent = children.map((c: any) => {
+                if (typeof c === 'string') return c;
+                return ''; // Ignore non-string children for gradient calculation
+            }).join('');
+        }
+      } catch (e) {
+        // Fallback
+      }
+
+      const hasContent = textContent.length > 0;
+
+      if (!hasContent) {
+         return (
+            <h1 className="relative z-10 text-4xl md:text-6xl lg:text-8xl font-extrabold mb-8 tracking-tight leading-[1.1] text-white" {...props}>
+                {children}
+            </h1>
+         );
+      }
+
       const words = textContent.split(' ');
       const firstWord = words[0] || '';
       const restText = words.slice(1).join(' ');

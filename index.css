@@ -1,3 +1,5 @@
+/* @tailwind directives removed to support Hybrid/CDN mode */
+
 /* Premium Theme Variables */
 :root {
   --cms-bg: #020617;

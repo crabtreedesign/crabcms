@@ -4,7 +4,7 @@ const STORAGE_KEYS = {
   POSTS: 'crab_cms_posts',
   SETTINGS: 'crab_cms_settings',
   THEME: 'crab_cms_theme',
-  INIT: 'crab_cms_init_v6' // Incremented to force re-seed
+  INIT: 'crab_cms_init_v7' // Incremented to force re-seed
 };
 
 const DEFAULT_SETTINGS: SiteSettings = {
